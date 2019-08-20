@@ -3,8 +3,6 @@
 
 A MetricQ source for HTTP servers
 
-Currently supported formats: json, openbmc
-
 Configuration
 ------------
 
@@ -54,7 +52,7 @@ Metric objects should contain the following keys:
 
 ``path`` HTTP path on the server, e.g ``/xyz/openbmc_project/senors/power/total_power``
 
-``plugin`` either ``json`` or ``openbmc``. Additional plugins can be installed.
+``plugin`` either ``"json"`` or ``"openbmc"``. Additional plugins can be installed.
 
 ``plugin_params`` parameters for the plugin, e.g. ``json_path`` containing a JSONPath to the desired value
 
@@ -65,19 +63,19 @@ Metric objects should contain the following keys:
 Login Types
 ~~~~~~~~~~~
 
-``none`` no authentication necessary
+``"none"`` no authentication necessary
 
-``basic`` HTTP Basic authentication headers (rfc7617), will be transmitted on every request
+``"basic"`` HTTP Basic authentication headers (rfc7617), will be transmitted on every request
 
-``cookie`` a seperate login endpoint will be called via a POST request and a cookie be saved that contains a login session. Must be configured via additional parameters: ``login_path``
+``"cookie"`` a seperate login endpoint will be called via a POST request and a cookie be saved that contains a login session. Must be configured via additional parameters: ``login_path``
 
 Plugins
 ~~~~~~~
 
 The source comes with two pre-installed plugins: 
 
-* ``json`` for generic JSON data. Available ``plugin_params``:
+* ``"json"`` for generic JSON data. Available ``plugin_params``:
 
    - ``json_path`` a JSONPath pointing to the value to be reported
      
-* ``openbmc`` for the OpenBMC interface
+* ``"openbmc"`` for the OpenBMC interface
