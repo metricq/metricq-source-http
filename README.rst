@@ -29,6 +29,8 @@ Host objects should define the following keys:
    "<address>": {
       "name": <metric-name-prefix>,
       "login_type": <value>,
+      "user": <value>,
+      "password": <value>,
       "metrics": { ... }  
    }
 
