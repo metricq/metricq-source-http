@@ -20,7 +20,7 @@ Configuration is provided by the MetricQ management interface on startup. The co
 
 ``http_timeout`` in seconds, the timeout for HTTP requests. Should ideally be shorter than ``interval``.
 
-``hosts`` object containing hostnames/IP address keys
+``hosts`` object containing hostnames/IP address keys.
 
 Host objects should define the following keys:
 
@@ -36,9 +36,13 @@ Host objects should define the following keys:
 
 ``login_type`` either ``"none"``, ``"basic"``, ``"cookie"``. More on login types below.
 
-``metrics`` containing several metric keys with objects as values
+``user`` (optional) username for login_types ``"basic"`` and ``"cookie"``
 
-``insecure`` (optional) default: ``"false"``, falls back on HTTP instead of HTTPS if set to ``"true"``
+``password`` (optional) password for login_types ``"basic"`` and ``"cookie"``
+
+``metrics`` containing several metric keys with objects as values.
+
+``insecure`` (optional) default: ``"false"``, falls back on HTTP instead of HTTPS if set to ``"true"``.
 
 Metric objects should contain the following keys:
 
@@ -54,20 +58,20 @@ Metric objects should contain the following keys:
 
 ``plugin`` either ``"json"`` or ``"openbmc"``. Additional plugins can be installed.
 
-``plugin_params`` parameters for the plugin, e.g. ``json_path`` containing a JSONPath to the desired value
+``plugin_params`` parameters for the plugin, e.g. ``json_path`` containing a JSONPath to the desired value.
 
-``unit`` the unit of the metric, will be reported as metadata
+``unit`` the unit of the metric, will be reported as metadata.
 
-``description`` a description of the resulting metric, metadata
+``description`` a description of the resulting metric, metadata.
 
 Login Types
 ~~~~~~~~~~~
 
-``"none"`` no authentication necessary
+``"none"`` no authentication necessary.
 
-``"basic"`` HTTP Basic authentication headers (rfc7617), will be transmitted on every request
+``"basic"`` HTTP Basic authentication headers (rfc7617), will be transmitted on every request. Requires the host keys ``user`` and ``password`` to also be specified.
 
-``"cookie"`` a seperate login endpoint will be called via a POST request and a cookie be saved that contains a login session. Must be configured via additional parameters: ``login_path``
+``"cookie"`` a seperate login endpoint will be called via a POST request and a cookie be saved that contains a login session. Must be configured via additional parameters: ``login_path``. Requires the host keys ``user`` and ``password`` to also be specified.
 
 Plugins
 ~~~~~~~
