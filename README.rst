@@ -76,7 +76,8 @@ Plugins
 
 The source comes with two pre-installed plugins: 
 
- * ``json`` for generic JSON data. Available ``plugin_params``:
-    - ``json_path`` a JSONPath pointing to the value to be reported
+* ``json`` for generic JSON data. Available ``plugin_params``:
+
+   - ``json_path`` a JSONPath pointing to the value to be reported
      
- * ``open-bmc`` for the OpenBMC interface
+* ``open-bmc`` for the OpenBMC interface
