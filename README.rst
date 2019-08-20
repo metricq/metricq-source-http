@@ -80,4 +80,4 @@ The source comes with two pre-installed plugins:
 
    - ``json_path`` a JSONPath pointing to the value to be reported
      
-* ``open-bmc`` for the OpenBMC interface
+* ``openbmc`` for the OpenBMC interface
