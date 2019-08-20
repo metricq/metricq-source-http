@@ -50,7 +50,7 @@ Metric objects should contain the following keys:
       "plugin_params": { ... }
    }
 
-``path`` HTTP path on the server, e.g ``/xyz/openbmc_project/senors/power/total_power``
+``path`` HTTP path on the server, e.g ``"/xyz/openbmc_project/senors/power/total_power"``
 
 ``plugin`` either ``"json"`` or ``"openbmc"``. Additional plugins can be installed.
 
