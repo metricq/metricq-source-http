@@ -38,12 +38,11 @@ Host objects should define the following keys:
 
 ``login_type`` either ``"none"``, ``"basic"``, ``"cookie"``. More on login types below.
 
-``metrics`` containng several metric keys with objects as values
+``metrics`` containing several metric keys with objects as values
 
 ``insecure`` (optional) default: ``"false"``, falls back on HTTP instead of HTTPS if set to ``"true"``
 
 Metric objects should contain the following keys:
-
 
 .. code-block:: json
 
@@ -62,3 +61,22 @@ Metric objects should contain the following keys:
 ``unit`` the unit of the metric, will be reported as metadata
 
 ``description`` a description of the resulting metric, metadata
+
+Login Types
+~~~~~~~~~~~
+
+``none`` no authentication necessary
+
+``basic`` HTTP Basic authentication headers (rfc7617), will be transmitted on every request
+
+``cookie`` a seperate login endpoint will be called via a POST request and a cookie be saved that contains a login session. Must be configured via additional parameters: ``login_path``
+
+Plugins
+~~~~~~~
+
+The source comes with two pre-installed plugins: 
+
+ * ``json`` for generic JSON data. Available ``plugin_params``:
+    - ``json_path`` a JSONPath pointing to the value to be reported
+     
+ * ``open-bmc`` for the OpenBMC interface
