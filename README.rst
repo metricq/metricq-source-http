@@ -16,7 +16,7 @@ Configuration is provided by the MetricQ management interface on startup. The co
       "hosts": { ... }   
    }
 
-``interval`` in seconds, the default request interval for all metrics. Can be overridden on a per-host or per-metric base.
+``interval`` in seconds, the default request interval for all metrics. Can be overridden on the metric level.
 
 ``http_timeout`` in seconds, the timeout for HTTP requests. Should ideally be shorter than ``interval``.
 
@@ -25,7 +25,6 @@ Configuration is provided by the MetricQ management interface on startup. The co
 Host objects should define the following keys:
 
 .. code-block:: json
-
    "<address>": {
       "name": <metric-name-prefix>,
       "login_type": <value>,
@@ -65,6 +64,8 @@ Metric objects should contain the following keys:
 ``unit`` the unit of the metric, will be reported as metadata.
 
 ``description`` a description of the resulting metric, metadata.
+
+``interval`` in seconds.  Can be set to override the global default interval.
 
 Login Types
 ~~~~~~~~~~~
