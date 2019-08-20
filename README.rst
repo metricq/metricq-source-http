@@ -20,7 +20,7 @@ Configuration is provided by the MetricQ management interface on startup. The co
 
 ``http_timeout`` in seconds, the timeout for HTTP requests. Should ideally be shorter than ``interval``.
 
-``hosts`` object containing hostnames/IP adress keys
+``hosts`` object containing hostnames/IP address keys
 
 Host objects should define the following keys:
 
