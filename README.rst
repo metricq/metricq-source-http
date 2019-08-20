@@ -25,6 +25,7 @@ Configuration is provided by the MetricQ management interface on startup. The co
 Host objects should define the following keys:
 
 .. code-block:: json
+
    "<address>": {
       "name": <metric-name-prefix>,
       "login_type": <value>,
