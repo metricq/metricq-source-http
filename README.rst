@@ -1,10 +1,22 @@
-# metricq-source-http
+``metricq-source-http``
+=======================
 
 A MetricQ source for HTTP servers
 
 Currently supported formats: json, openbmc
 
+Configuration
+------------
+
 Configuration is provided by the MetricQ management interface on startup. The configuration format (JSON) includes the following global keys:
+
+.. code-block:: json
+
+   {
+      "interval": <value>,
+      "http_timeout": <value>,
+      "hosts": { ... }   
+   }
 
 ``interval`` in seconds, the default request interval for all metrics. Can be overridden on a per-host or per-metric base.
 
@@ -13,6 +25,16 @@ Configuration is provided by the MetricQ management interface on startup. The co
 ``hosts`` object containing hostnames/IP adresses 
 
 Host objects should define the following keys:
+
+
+.. code-block:: json
+
+   "hosts": {
+      "name": <host-name>,
+      "login_type": <value>,
+      "insecure": "true"|"false",
+      "sensors": { ... }  
+   }
 
 ``name`` will be part (prefix) of the metric name
 
