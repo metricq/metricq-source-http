@@ -152,7 +152,7 @@ async def query_data(metric_name, conf):
 
 
 async def collect_periodically(metric_name, conf, result_queue):
-    """loop that collect data for one sensor
+    """loop that collect data for one metric
 
     Arguments:
         metric_name {str} -- metric_name
@@ -264,40 +264,40 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     for host in conf:
         host_login_data = check_login_conf(host, conf[host])
         session = make_session(host_login_data, timeout)
-        for sensor in conf[host]['sensors']:
+        for metric in conf[host]['metrics']:
             metric_name = '{0}.{1}'.format(
                 conf[host]['name'],
-                sensor,
+                metric,
             )
-            interval = conf[host]['sensors'][sensor].get(
+            interval = conf[host]['metrics'][metric].get(
                 'interval',
                 default_interval
             )
             metrics[metric_name] = {
                 'rate': interval,
             }
-            if 'unit' in conf[host]['sensors'][sensor]:
-                metrics[metric_name]['unit'] = conf[host]['sensors'][sensor]['unit']
-            if 'description' in conf[host]['sensors'][sensor]:
-                metrics[metric_name]['description'] = conf[host]['sensors'][sensor]['description']
+            if 'unit' in conf[host]['metrics'][metric]:
+                metrics[metric_name]['unit'] = conf[host]['metrics'][metric]['unit']
+            if 'description' in conf[host]['metrics'][metric]:
+                metrics[metric_name]['description'] = conf[host]['metrics'][metric]['description']
 
             if 'insecure' in conf[host] and conf[host]['insecure']:
                 host_url = '{}{}'.format('http://', host)
             else:
                 host_url = '{}{}'.format('https://', host)
 
-            if not 'path' in conf[host]['sensors'][sensor]:
+            if not 'path' in conf[host]['metrics'][metric]:
                 raise ConfigError(
-                    "path missing in {}: {}".format(host, sensor)
+                    "path missing in {}: {}".format(host, metric)
                 )
-            if not 'plugin' in conf[host]['sensors'][sensor]:
+            if not 'plugin' in conf[host]['metrics'][metric]:
                 raise ConfigError(
-                    "'plugin' missing in {}: {}".format(host, sensor)
+                    "'plugin' missing in {}: {}".format(host, metric)
                 )
             new_conf[metric_name] = {
-                'path': conf[host]['sensors'][sensor]['path'],
-                'plugin': conf[host]['sensors'][sensor]['plugin'],
-                'plugin_params': conf[host]['sensors'][sensor].get(
+                'path': conf[host]['metrics'][metric]['path'],
+                'plugin': conf[host]['metrics'][metric]['plugin'],
+                'plugin_params': conf[host]['metrics'][metric].get(
                     'plugin_params',
                     {},
                 ),
@@ -325,7 +325,6 @@ class HttpSource(metricq.IntervalSource):
     @metricq.rpc_handler('config')
     async def _on_config(self, **config):
         self.period = 1
-        print(config)
         new_conf, metrics = make_conf_and_metrics(
             config['hosts'],
             config.get('interval', 1),
