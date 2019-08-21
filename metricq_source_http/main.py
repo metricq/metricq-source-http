@@ -161,12 +161,6 @@ async def collect_periodically(metric_name, conf, result_queue):
     """
     deadline = time.time() + conf['interval']
     while True:
-        while deadline <= time.time():
-            logging.warning('missed deadline')
-            deadline += conf['interval']
-        sleep_var = deadline - time.time()
-        await asyncio.sleep(sleep_var)
-        deadline += conf['interval']
         if not conf['host_infos']['login_data']['authorized']:
             await cookie_auth(
                 conf['host_infos']['host_url'],
@@ -178,6 +172,12 @@ async def collect_periodically(metric_name, conf, result_queue):
             conf,
         )
         result_queue.put(result)
+        while deadline <= time.time():
+            logging.warning('missed deadline')
+            deadline += conf['interval']
+        sleep_var = deadline - time.time()
+        await asyncio.sleep(sleep_var)
+        deadline += conf['interval']
 
 
 def make_session(login_data, timeout):
