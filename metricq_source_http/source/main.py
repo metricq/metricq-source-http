@@ -124,7 +124,7 @@ async def query_data(metric_name, conf):
             )
         )
     if json_data:
-        full_modul_name = 'metricq_source_http.p_{}'.format(
+        full_modul_name = 'metricq_source_http.plugin_{}'.format(
             conf['plugin']
         )
         if importlib.util.find_spec(full_modul_name):
