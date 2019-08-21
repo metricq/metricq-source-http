@@ -274,7 +274,7 @@ def make_conf_and_metrics(conf, default_interval, timeout):
                 default_interval
             )
             metrics[metric_name] = {
-                'rate': interval,
+                'rate': 1.0 / interval,
             }
             if 'unit' in metric_data:
                 metrics[metric_name]['unit'] = metric_data['unit']
