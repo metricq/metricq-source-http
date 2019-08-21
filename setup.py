@@ -1,13 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(name='metricq_source_http',
       version='0.1',
       author='TU Dresden',
       python_requires=">=3.6",
-      packages=find_packages(),
+      packages=['metricq_source_http.source', 'metricq_source_http.plugin_json', 'metricq_source_http.plugin_openbmc'],
       scripts=[],
       entry_points='''
       [console_scripts]
-      metricq-source-http=metricq_source_http:run
+      metricq-source-http=metricq_source_http.source:run
       ''',
       install_requires=['aiomonitor', 'click', 'click_log', 'metricq', 'aiohttp', 'jsonpath-rw'])

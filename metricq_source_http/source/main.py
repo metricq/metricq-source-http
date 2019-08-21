@@ -124,7 +124,7 @@ async def query_data(metric_name, conf):
             )
         )
     if json_data:
-        full_modul_name = 'metricq_source_http.plugins.p_{}'.format(
+        full_modul_name = 'metricq_source_http.plugin_{}'.format(
             conf['plugin']
         )
         if importlib.util.find_spec(full_modul_name):
@@ -161,12 +161,6 @@ async def collect_periodically(metric_name, conf, result_queue):
     """
     deadline = time.time() + conf['interval']
     while True:
-        while deadline <= time.time():
-            logging.warning('missed deadline')
-            deadline += conf['interval']
-        sleep_var = deadline - time.time()
-        await asyncio.sleep(sleep_var)
-        deadline += conf['interval']
         if not conf['host_infos']['login_data']['authorized']:
             await cookie_auth(
                 conf['host_infos']['host_url'],
@@ -178,6 +172,12 @@ async def collect_periodically(metric_name, conf, result_queue):
             conf,
         )
         result_queue.put(result)
+        while deadline <= time.time():
+            logging.warning('missed deadline')
+            deadline += conf['interval']
+        sleep_var = deadline - time.time()
+        await asyncio.sleep(sleep_var)
+        deadline += conf['interval']
 
 
 def make_session(login_data, timeout):
@@ -264,40 +264,40 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     for host in conf:
         host_login_data = check_login_conf(host, conf[host])
         session = make_session(host_login_data, timeout)
-        for metric in conf[host]['metrics']:
+        for metric, metric_data in conf[host]['metrics'].items():
             metric_name = '{0}.{1}'.format(
                 conf[host]['name'],
                 metric,
             )
-            interval = conf[host]['metrics'][metric].get(
+            interval = metric_data.get(
                 'interval',
                 default_interval
             )
             metrics[metric_name] = {
                 'rate': interval,
             }
-            if 'unit' in conf[host]['metrics'][metric]:
-                metrics[metric_name]['unit'] = conf[host]['metrics'][metric]['unit']
-            if 'description' in conf[host]['metrics'][metric]:
-                metrics[metric_name]['description'] = conf[host]['metrics'][metric]['description']
+            if 'unit' in metric_data:
+                metrics[metric_name]['unit'] = metric_data['unit']
+            if 'description' in metric_data:
+                metrics[metric_name]['description'] = metric_data['description']
 
             if 'insecure' in conf[host] and conf[host]['insecure']:
                 host_url = '{}{}'.format('http://', host)
             else:
                 host_url = '{}{}'.format('https://', host)
 
-            if not 'path' in conf[host]['metrics'][metric]:
+            if not 'path' in metric_data:
                 raise ConfigError(
                     "path missing in {}: {}".format(host, metric)
                 )
-            if not 'plugin' in conf[host]['metrics'][metric]:
+            if not 'plugin' in metric_data:
                 raise ConfigError(
                     "'plugin' missing in {}: {}".format(host, metric)
                 )
             new_conf[metric_name] = {
-                'path': conf[host]['metrics'][metric]['path'],
-                'plugin': conf[host]['metrics'][metric]['plugin'],
-                'plugin_params': conf[host]['metrics'][metric].get(
+                'path': metric_data['path'],
+                'plugin': metric_data['plugin'],
+                'plugin_params': metric_data.get(
                     'plugin_params',
                     {},
                 ),
