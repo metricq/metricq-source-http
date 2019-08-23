@@ -13,6 +13,7 @@ import metricq
 from metricq.logging import get_logger
 
 NaN = float('nan')
+LOADED_PLUGINS = {}
 
 logger = get_logger()
 
@@ -124,13 +125,29 @@ async def query_data(metric_name, conf):
             )
         )
     if data:
-        full_modul_name = 'metricq_source_http.plugin_{}'.format(
-            conf['plugin'],
-        )
-        if importlib.util.find_spec(full_modul_name):
-            plugin = importlib.import_module(full_modul_name)
+        if not conf['plugin'] in LOADED_PLUGINS:
+            full_modul_name = 'metricq_source_http.plugin_{}'.format(
+                conf['plugin'],
+            )
+            if importlib.util.find_spec(full_modul_name):
+                LOADED_PLUGINS[conf['plugin']] = importlib.import_module(
+                    full_modul_name
+                )
+            else:
+                logger.error(
+                    'Error by {0}, plugin not found: {1}'
+                    .format(
+                        url,
+                        conf['plugin'],
+                    )
+                )
+
+        if conf['plugin'] in LOADED_PLUGINS:
             try:
-                value = plugin.response_parse(data, **conf['plugin_params'])
+                value = LOADED_PLUGINS[conf['plugin']].response_parse(
+                    data,
+                    **conf['plugin_params'],
+                )
             except Exception as e:
                 logger.error(
                     'Error by parse data from {0}, plugin: {1}, Exception: {2}'
@@ -140,14 +157,7 @@ async def query_data(metric_name, conf):
                         e,
                     )
                 )
-        else:
-            logger.error(
-                'Error by {0}, plugin not found: {1}'
-                .format(
-                    url,
-                    conf['plugin'],
-                )
-            )
+
     return metric_name, ts, value
 
 
