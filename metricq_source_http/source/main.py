@@ -108,7 +108,7 @@ async def query_data(metric_name, conf):
             if conf['host_infos']['login_data']['login_type'] == 'cookie':
                 conf['host_infos']['login_data']['authorized'] = False
         else:
-            data = await response.text(content_type=None)
+            data = await response.text()
     except asyncio.TimeoutError:
         logger.error(
             'Timeout by query data from {0}'
