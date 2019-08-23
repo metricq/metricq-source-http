@@ -1,6 +1,8 @@
+import json
 
 
-def json_parse(json, **kwargs):
+def response_parse(response, **kwargs):
+    json = json.load(response)
     if 'data' in json:
         if 'Scale' in json['data'] and 'Value' in json['data']:
             value = json['data']['Value'] * \

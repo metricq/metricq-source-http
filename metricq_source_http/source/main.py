@@ -93,7 +93,7 @@ async def query_data(metric_name, conf):
     ts = metricq.Timestamp.now()
     if not conf['host_infos']['login_data']['authorized']:
         return metric_name, ts, value
-    json_data = {}
+    data = None
     try:
         response = await conf['host_infos']['session'].get(url)
         if response.status >= 400:
@@ -107,7 +107,7 @@ async def query_data(metric_name, conf):
             if conf['host_infos']['login_data']['login_type'] == 'cookie':
                 conf['host_infos']['login_data']['authorized'] = False
         else:
-            json_data = await response.json(content_type=None)
+            data = await response.text(content_type=None)
     except asyncio.TimeoutError:
         logger.error(
             'Timeout by query data from {0}'
@@ -123,14 +123,14 @@ async def query_data(metric_name, conf):
                 e,
             )
         )
-    if json_data:
+    if data:
         full_modul_name = 'metricq_source_http.plugin_{}'.format(
-            conf['plugin']
+            conf['plugin'],
         )
         if importlib.util.find_spec(full_modul_name):
             plugin = importlib.import_module(full_modul_name)
             try:
-                value = plugin.json_parse(json_data, **conf['plugin_params'])
+                value = plugin.response_parse(data, **conf['plugin_params'])
             except Exception as e:
                 logger.error(
                     'Error by parse data from {0}, plugin: {1}, Exception: {2}'
