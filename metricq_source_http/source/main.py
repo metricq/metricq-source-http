@@ -271,12 +271,12 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     """
     metrics = {}
     new_conf = {}
-    for host in conf:
-        host_login_data = check_login_conf(host, conf[host])
+    for host, host_data in conf.items():
+        host_login_data = check_login_conf(host, host_data)
         session = make_session(host_login_data, timeout)
-        for metric, metric_data in conf[host]['metrics'].items():
+        for metric, metric_data in host_data['metrics'].items():
             metric_name = '{0}.{1}'.format(
-                conf[host]['name'],
+                host_data['name'],
                 metric,
             )
             interval = metric_data.get(
@@ -288,10 +288,37 @@ def make_conf_and_metrics(conf, default_interval, timeout):
             }
             if 'unit' in metric_data:
                 metrics[metric_name]['unit'] = metric_data['unit']
-            if 'description' in metric_data:
-                metrics[metric_name]['description'] = metric_data['description']
+            else:
+                logger.warning(
+                        'no unit given in {}'.format(
+                            metric_name,
+                        )
+                    )
 
-            if 'insecure' in conf[host] and conf[host]['insecure']:
+            if 'description' in host_data:
+                if 'description' in metric_data:
+                    metrics[metric_name]['description'] = '{0} {1}'.format(
+                        host_data['description'],
+                        metric_data['description'],
+                    )
+                else:
+                    logger.warning(
+                        'host description given but no metric description in {}'
+                        .format(
+                            metric_name,
+                        )
+                    )
+            else:
+                if 'description' in metric_data:
+                    metrics[metric_name]['description'] = metric_data['description']
+                else:
+                    logger.warning(
+                        'no description given in {}'.format(
+                            metric_name,
+                        )
+                    )
+
+            if 'insecure' in host_data and host_data['insecure']:
                 host_url = '{}{}'.format('http://', host)
             else:
                 host_url = '{}{}'.format('https://', host)
