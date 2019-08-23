@@ -87,3 +87,41 @@ The source comes with two pre-installed plugins:
    - ``json_path`` a JSONPath pointing to the value to be reported
      
 * ``"openbmc"`` for the OpenBMC interface
+
+Example
+~~~~~~~
+
+Querying power and temperature from a Redfish-capable server:
+
+.. code-block:: json
+
+  "interval": 60,
+  "http_timeout": 15,
+  "hosts": {
+    "192.168.0.100": {
+      "name": "MyRedfishServer",    
+      "login_type": "basic",
+      "user": "redfishuser",
+      "password": "cyAFca7f5i",
+      "metrics": {
+        "temperature": {
+          "path": "/redfish/v1/Chassis/1U/Thermal",
+          "plugin": "json",
+          "plugin_params": {
+            "json_path": "$.Temperatures.ReadingCelsius"
+          },
+          "description": "Temperature",
+          "unit": "degC"
+        },
+        "power": {
+          "path": "/redfish/v1/Chassis/1U/Power",
+          "plugin": "json",
+          "plugin_params": {
+            "json_path": "$.PowerControl.PowerConsumedWatts"
+          },
+          "description": "The actual power being consumed by the chassis.",
+          "unit": "W"
+        }
+      }
+    }
+  }
