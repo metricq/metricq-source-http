@@ -108,7 +108,7 @@ Querying power and temperature from a Redfish-capable server:
           "path": "/redfish/v1/Chassis/1U/Thermal",
           "plugin": "json",
           "plugin_params": {
-            "json_path": "$.Temperatures.ReadingCelsius"
+            "json_path": "$.Temperatures[0].ReadingCelsius"
           },
           "description": "Temperature",
           "unit": "degC"
@@ -117,7 +117,7 @@ Querying power and temperature from a Redfish-capable server:
           "path": "/redfish/v1/Chassis/1U/Power",
           "plugin": "json",
           "plugin_params": {
-            "json_path": "$.PowerControl.PowerConsumedWatts"
+            "json_path": "$.PowerControl[0].PowerConsumedWatts"
           },
           "description": "The actual power being consumed by the chassis.",
           "unit": "W"
