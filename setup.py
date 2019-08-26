@@ -10,4 +10,4 @@ setup(name='metricq_source_http',
       [console_scripts]
       metricq-source-http=metricq_source_http.source:run
       ''',
-      install_requires=['aiomonitor', 'click', 'click_log', 'metricq', 'aiohttp', 'jsonpath-rw'])
+      install_requires=['aiomonitor', 'click', 'click_log', 'metricq', 'aiohttp', 'jsonpath-rw', 'python-hostlist'])
