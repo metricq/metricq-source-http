@@ -13,28 +13,31 @@ Configuration is provided by the MetricQ management interface on startup. The co
    {
       "interval": <value>,
       "http_timeout": <value>,
-      "hosts": { ... }   
+      "hosts": [ ... ]   
    }
 
 ``interval`` in seconds, the default request interval for all metrics. Can be overridden on the metric level.
 
 ``http_timeout`` in seconds, the timeout for HTTP requests. Should ideally be shorter than ``interval``.
 
-``hosts`` object containing hostnames/IP address keys.
+``hosts`` list containing host objects.
 
 Host objects should define the following keys:
 
 .. code-block:: json
 
-   "<address>": {
-      "name": <metric-name-prefix>,
+   {
+      "hosts": <addresses>,
+      "names": <metric-name-prefix's>,
       "login_type": <value>,
       "user": <value>,
       "password": <value>,
       "metrics": { ... }  
    }
 
-``name`` will be part (prefix) of the metric name
+``hosts`` is a hostrange string or list of hosts must be the same length as names
+
+``names`` is a hostrange string or list of names, will be part (prefix) of the metric name
 
 ``login_type`` either ``"none"``, ``"basic"``, ``"cookie"``. More on login types below.
 
