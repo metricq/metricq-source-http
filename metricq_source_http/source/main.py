@@ -9,10 +9,12 @@ import click
 import click_log
 import aiohttp
 
+import hostlist
 import metricq
 from metricq.logging import get_logger
 
 NaN = float('nan')
+LOADED_PLUGINS = {}
 
 logger = get_logger()
 
@@ -93,7 +95,7 @@ async def query_data(metric_name, conf):
     ts = metricq.Timestamp.now()
     if not conf['host_infos']['login_data']['authorized']:
         return metric_name, ts, value
-    json_data = {}
+    data = None
     try:
         response = await conf['host_infos']['session'].get(url)
         if response.status >= 400:
@@ -107,7 +109,7 @@ async def query_data(metric_name, conf):
             if conf['host_infos']['login_data']['login_type'] == 'cookie':
                 conf['host_infos']['login_data']['authorized'] = False
         else:
-            json_data = await response.json(content_type=None)
+            data = await response.text()
     except asyncio.TimeoutError:
         logger.error(
             'Timeout by query data from {0}'
@@ -123,14 +125,30 @@ async def query_data(metric_name, conf):
                 e,
             )
         )
-    if json_data:
-        full_modul_name = 'metricq_source_http.plugin_{}'.format(
-            conf['plugin']
-        )
-        if importlib.util.find_spec(full_modul_name):
-            plugin = importlib.import_module(full_modul_name)
+    if data:
+        if not conf['plugin'] in LOADED_PLUGINS:
+            full_modul_name = 'metricq_source_http.plugin_{}'.format(
+                conf['plugin'],
+            )
+            if importlib.util.find_spec(full_modul_name):
+                LOADED_PLUGINS[conf['plugin']] = importlib.import_module(
+                    full_modul_name
+                )
+            else:
+                logger.error(
+                    'Error by {0}, plugin not found: {1}'
+                    .format(
+                        url,
+                        conf['plugin'],
+                    )
+                )
+
+        if conf['plugin'] in LOADED_PLUGINS:
             try:
-                value = plugin.json_parse(json_data, **conf['plugin_params'])
+                value = LOADED_PLUGINS[conf['plugin']].response_parse(
+                    data,
+                    **conf['plugin_params'],
+                )
             except Exception as e:
                 logger.error(
                     'Error by parse data from {0}, plugin: {1}, Exception: {2}'
@@ -140,14 +158,7 @@ async def query_data(metric_name, conf):
                         e,
                     )
                 )
-        else:
-            logger.error(
-                'Error by {0}, plugin not found: {1}'
-                .format(
-                    url,
-                    conf['plugin'],
-                )
-            )
+
     return metric_name, ts, value
 
 
@@ -244,12 +255,25 @@ def check_login_conf(host, conf):
             host_login_infos['authorized'] = False
     return host_login_infos
 
+def get_hostlist(obj):
+    """check is str than parse to list with hostlist
+
+    Arguments:
+        obj {str/list} -- obj to check
+
+    Returns:
+        list -- list
+    """
+    if type(obj) is str:
+        return hostlist.expand_hostlist(obj)
+    else:
+        return obj
 
 def make_conf_and_metrics(conf, default_interval, timeout):
     """rebuild config and make the metrics to declaire
 
     Arguments:
-        conf {dict} -- config to rebuild
+        conf {list<dict>} -- configs to rebuild
         default_interval {int} -- interval if no other exists
         timeout {int} -- timeout
 
@@ -261,54 +285,88 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     """
     metrics = {}
     new_conf = {}
-    for host in conf:
-        host_login_data = check_login_conf(host, conf[host])
-        session = make_session(host_login_data, timeout)
-        for metric, metric_data in conf[host]['metrics'].items():
-            metric_name = '{0}.{1}'.format(
-                conf[host]['name'],
-                metric,
+    for host_data in conf:
+        hosts = get_hostlist(host_data['hosts'])
+        host_names = get_hostlist(host_data['names'])
+        if len(hosts) == len(host_names):
+            for host, host_name in zip(hosts, host_names):
+                host_login_data = check_login_conf(host, host_data)
+                session = make_session(host_login_data, timeout)
+                for metric, metric_data in host_data['metrics'].items():
+                    metric_name = '{0}.{1}'.format(
+                        host_name,
+                        metric,
+                    )
+                    interval = metric_data.get(
+                        'interval',
+                        default_interval
+                    )
+                    metrics[metric_name] = {
+                        'rate': 1.0 / interval,
+                    }
+                    if 'unit' in metric_data:
+                        metrics[metric_name]['unit'] = metric_data['unit']
+                    else:
+                        logger.warning(
+                                'no unit given in {}'.format(
+                                    metric_name,
+                                )
+                            )
+
+                    if 'description' in host_data:
+                        if 'description' in metric_data:
+                            metrics[metric_name]['description'] = '{0} {1}'.format(
+                                host_data['description'],
+                                metric_data['description'],
+                            )
+                        else:
+                            logger.warning(
+                                'host description given but no metric description in {}'
+                                .format(
+                                    metric_name,
+                                )
+                            )
+                    else:
+                        if 'description' in metric_data:
+                            metrics[metric_name]['description'] = metric_data['description']
+                        else:
+                            logger.warning(
+                                'no description given in {}'.format(
+                                    metric_name,
+                                )
+                            )
+
+                    if 'insecure' in host_data and host_data['insecure']:
+                        host_url = '{}{}'.format('http://', host)
+                    else:
+                        host_url = '{}{}'.format('https://', host)
+
+                    if not 'path' in metric_data:
+                        raise ConfigError(
+                            "path missing in {}: {}".format(host, metric)
+                        )
+                    if not 'plugin' in metric_data:
+                        raise ConfigError(
+                            "'plugin' missing in {}: {}".format(host, metric)
+                        )
+                    new_conf[metric_name] = {
+                        'path': metric_data['path'],
+                        'plugin': metric_data['plugin'],
+                        'plugin_params': metric_data.get(
+                            'plugin_params',
+                            {},
+                        ),
+                        'host_infos': {
+                            'host_url': host_url,
+                            'login_data': host_login_data,
+                            'session': session,
+                        },
+                        'interval': interval,
+                    }
+        else:
+            raise ConfigError(
+                'number of names and hosts different in {} '.format(host_data)
             )
-            interval = metric_data.get(
-                'interval',
-                default_interval
-            )
-            metrics[metric_name] = {
-                'rate': 1.0 / interval,
-            }
-            if 'unit' in metric_data:
-                metrics[metric_name]['unit'] = metric_data['unit']
-            if 'description' in metric_data:
-                metrics[metric_name]['description'] = metric_data['description']
-
-            if 'insecure' in conf[host] and conf[host]['insecure']:
-                host_url = '{}{}'.format('http://', host)
-            else:
-                host_url = '{}{}'.format('https://', host)
-
-            if not 'path' in metric_data:
-                raise ConfigError(
-                    "path missing in {}: {}".format(host, metric)
-                )
-            if not 'plugin' in metric_data:
-                raise ConfigError(
-                    "'plugin' missing in {}: {}".format(host, metric)
-                )
-            new_conf[metric_name] = {
-                'path': metric_data['path'],
-                'plugin': metric_data['plugin'],
-                'plugin_params': metric_data.get(
-                    'plugin_params',
-                    {},
-                ),
-                'host_infos': {
-                    'host_url': host_url,
-                    'login_data': host_login_data,
-                    'session': session,
-                },
-                'interval': interval,
-            }
-
     return new_conf, metrics
 
 
