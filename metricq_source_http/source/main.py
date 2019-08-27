@@ -30,6 +30,13 @@ class ConfigError(Exception):
     pass
 
 
+def hostlist_sanity_check():
+    expected = ["a02","a03","b02","b01","c09","c07","a01"]
+    hostlist_str = "a[02-03],b[02,01],c09,c07,a01"
+    if not hostlist.expand_hostlist(hostlist_str) == expected:
+        raise Exception('hostlist sort output!')
+
+
 async def cookie_auth(host, login_data, session):
     """try to login by login page
 
@@ -372,6 +379,7 @@ def make_conf_and_metrics(conf, default_interval, timeout):
 
 class HttpSource(metricq.IntervalSource):
     def __init__(self, *args, **kwargs):
+        hostlist_sanity_check()
         self.period = None
         self.result_queue = Queue()
         logger.info("initializing HttpSource")
