@@ -418,8 +418,8 @@ class HttpSource(metricq.IntervalSource):
         ts_before = time.time()
         try:
             await self.flush()
-￼	     except Exception as e:
-￼	         logger.error("Exception in send: {}".format(str(e)))
+        except Exception as e:
+            logger.error("Exception in send: {}".format(str(e)))
         logger.info("Send took {:.2f} seconds, count: {}".format(
             time.time() - ts_before, send_metric_count),
         )
