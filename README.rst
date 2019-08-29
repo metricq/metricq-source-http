@@ -98,11 +98,10 @@ Querying power and temperature from a Redfish-capable server:
 
 .. code-block:: json
 
-{
   "interval": 60,
   "http_timeout": 15,
   "hosts": {
-    "hosts": "192.168.0.100": {
+    "hosts": "192.168.0.100",
     "names": "MyRedfishServer",
     "login_type": "basic",
     "user": "redfishuser",
@@ -128,4 +127,3 @@ Querying power and temperature from a Redfish-capable server:
       }
     }
   }
-}
