@@ -28,14 +28,14 @@ Host objects should define the following keys:
 
    {
       "hosts": <addresses>,
-      "names": <metric-name-prefix's>,
+      "names": <metric-name-prefixes>,
       "login_type": <value>,
       "user": <value>,
       "password": <value>,
       "metrics": { ... }  
    }
 
-``hosts`` is a hostrange string or list of hosts must be the same length as names
+``hosts`` is a hostrange string or list of hosts, must be the same length as ``names``
 
 ``names`` is a hostrange string or list of names, will be part (prefix) of the metric name
 
@@ -98,33 +98,34 @@ Querying power and temperature from a Redfish-capable server:
 
 .. code-block:: json
 
+{
   "interval": 60,
   "http_timeout": 15,
   "hosts": {
-    "192.168.0.100": {
-      "name": "MyRedfishServer",    
-      "login_type": "basic",
-      "user": "redfishuser",
-      "password": "cyAFca7f5i",
-      "metrics": {
-        "temperature": {
-          "path": "/redfish/v1/Chassis/1U/Thermal",
-          "plugin": "json",
-          "plugin_params": {
-            "json_path": "$.Temperatures[0].ReadingCelsius"
-          },
-          "description": "Temperature",
-          "unit": "degC"
+    "hosts": "192.168.0.100": {
+    "names": "MyRedfishServer",
+    "login_type": "basic",
+    "user": "redfishuser",
+    "password": "cyAFca7f5i",
+    "metrics": {
+      "temperature": {
+        "path": "/redfish/v1/Chassis/1U/Thermal",
+        "plugin": "json",
+        "plugin_params": {
+          "json_path": "$.Temperatures[0].ReadingCelsius"
         },
-        "power": {
-          "path": "/redfish/v1/Chassis/1U/Power",
-          "plugin": "json",
-          "plugin_params": {
-            "json_path": "$.PowerControl[0].PowerConsumedWatts"
-          },
-          "description": "The actual power being consumed by the chassis.",
-          "unit": "W"
-        }
+        "description": "Temperature",
+        "unit": "degC"
+      },
+      "power": {
+        "path": "/redfish/v1/Chassis/1U/Power",
+        "plugin": "json",
+        "plugin_params": {
+          "json_path": "$.PowerControl[0].PowerConsumedWatts"
+        },
+        "description": "The actual power being consumed by the chassis.",
+        "unit": "W"
       }
     }
   }
+}
