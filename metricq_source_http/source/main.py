@@ -380,7 +380,6 @@ def make_conf_and_metrics(conf, default_interval, timeout):
 class HttpSource(metricq.IntervalSource):
     def __init__(self, *args, **kwargs):
         hostlist_sanity_check()
-        self.period = None
         self.result_queue = Queue()
         logger.info("initializing HttpSource")
         super().__init__(*args, **kwargs)
