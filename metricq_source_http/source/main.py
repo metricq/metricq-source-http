@@ -11,6 +11,7 @@ import aiohttp
 
 import hostlist
 import metricq
+from metricq import Timedelta
 from metricq.logging import get_logger
 
 NaN = float('nan')
@@ -389,7 +390,7 @@ class HttpSource(metricq.IntervalSource):
 
     @metricq.rpc_handler('config')
     async def _on_config(self, **config):
-        self.period = 1
+        self.period = Timedelta.from_s(1)
         new_conf, metrics = make_conf_and_metrics(
             config['hosts'],
             config.get('interval', 1),
