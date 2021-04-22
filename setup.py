@@ -9,7 +9,7 @@ setup(name='metricq_source_http',
       entry_points='''
       [console_scripts]
       metricq-source-http=metricq_source_http.source:run
-      """,
+      ''',
     install_requires=[
         "aiomonitor",
         "click",
