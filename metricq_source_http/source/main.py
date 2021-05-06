@@ -13,6 +13,7 @@ import hostlist
 import metricq
 from metricq import Timedelta
 from metricq.logging import get_logger
+from expiringdict import ExpiringDict
 
 NaN = float('nan')
 LOADED_PLUGINS = {}
@@ -26,13 +27,15 @@ logger.setLevel('INFO')
 logger.handlers[0].formatter = logging.Formatter(
     fmt='%(asctime)s [%(levelname)-8s] [%(name)-20s] %(message)s')
 
+cache = ExpiringDict(max_len=5, max_age_seconds=5)
+
 
 class ConfigError(Exception):
     pass
 
 
 def hostlist_sanity_check():
-    expected = ["a02","a03","b02","b01","c09","c07","a01"]
+    expected = ["a02", "a03", "b02", "b01", "c09", "c07", "a01"]
     hostlist_str = "a[02-03],b[02,01],c09,c07,a01"
     if not hostlist.expand_hostlist(hostlist_str) == expected:
         raise Exception('hostlist sort output!')
@@ -104,10 +107,13 @@ async def query_data(metric_name, conf):
     if not conf['host_infos']['login_data']['authorized']:
         return metric_name, ts, value
     data = None
-    try:
-        response = await conf['host_infos']['session'].get(url)
-        if response.status >= 400:
-            logger.error(
+    if url in cache:
+       data = cache[url]
+    else:
+        try:
+            response = await conf['host_infos']['session'].get(url)
+            if response.status >= 400:
+                logger.error(
                 'Error by {0}, status code: {1}'
                 .format(
                     url,
@@ -116,23 +122,24 @@ async def query_data(metric_name, conf):
             )
             if conf['host_infos']['login_data']['login_type'] == 'cookie':
                 conf['host_infos']['login_data']['authorized'] = False
-        else:
-            data = await response.text()
-    except asyncio.TimeoutError:
-        logger.error(
-            'Timeout by query data from {0}'
-            .format(
-                url,
+            else:
+                data = await response.text()
+                cache[url] = data
+        except asyncio.TimeoutError:
+            logger.error(
+                'Timeout by query data from {0}'
+                .format(
+                    url,
+                )
             )
-        )
-    except aiohttp.ClientError as e:
-        logger.error(
-            'Error by query data from {0}, {1}'
-            .format(
-                url,
-                e,
+        except aiohttp.ClientError as e:
+            logger.error(
+                'Error by query data from {0}, {1}'
+                .format(
+                    url,
+                    e,
+                )
             )
-        )
     if data:
         if not conf['plugin'] in LOADED_PLUGINS:
             full_modul_name = 'metricq_source_http.plugin_{}'.format(
@@ -294,6 +301,9 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     metrics = {}
     new_conf = {}
     for host_data in conf:
+        use_cache = False
+        if 'use_cache' in host_data:
+            use_cache = host_data['use_cache']        
         hosts = get_hostlist(host_data['hosts'])
         host_names = get_hostlist(host_data['names'])
         if len(hosts) == len(host_names):
@@ -358,6 +368,7 @@ def make_conf_and_metrics(conf, default_interval, timeout):
                             "'plugin' missing in {}: {}".format(host, metric)
                         )
                     new_conf[metric_name] = {
+                        'use_cache': use_cache,
                         'path': metric_data['path'],
                         'plugin': metric_data['plugin'],
                         'plugin_params': metric_data.get(

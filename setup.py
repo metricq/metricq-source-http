@@ -18,5 +18,6 @@ setup(name='metricq_source_http',
         "aiohttp",
         "jsonpath-rw",
         "python-hostlist",
+        "expiringdict"
     ],
 )
