@@ -301,9 +301,7 @@ def make_conf_and_metrics(conf, default_interval, timeout):
     metrics = {}
     new_conf = {}
     for host_data in conf:
-        use_cache = False
-        if 'use_cache' in host_data:
-            use_cache = host_data['use_cache']        
+        use_cache = host_data.get('use_cache', False)
         hosts = get_hostlist(host_data['hosts'])
         host_names = get_hostlist(host_data['names'])
         if len(hosts) == len(host_names):
