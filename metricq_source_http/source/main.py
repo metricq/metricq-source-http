@@ -107,7 +107,7 @@ async def query_data(metric_name, conf):
     if not conf['host_infos']['login_data']['authorized']:
         return metric_name, ts, value
     data = None
-    if conf{'use_cache'] and (url in cache):
+    if ['use_cache'] and (url in cache):
        data = cache[url]
     else:
         try:
