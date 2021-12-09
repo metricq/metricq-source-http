@@ -422,8 +422,11 @@ class HttpSource(metricq.IntervalSource):
         send_metric_count = 0
         while not self.result_queue.empty():
             metric_name, ts, value = self.result_queue.get()
-            self[metric_name].append(ts, value)
-            send_metric_count += 1
+            if isinstance(value, (int, float)):
+                self[metric_name].append(ts, value)
+                send_metric_count += 1
+            elif value is not None:
+                logger.error(f"Value ({value}) for {metric_name} is of type {type(value)}. Can't send via MetricQ!")
         ts_before = time.time()
         try:
             await self.flush()
