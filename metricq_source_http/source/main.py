@@ -1,3 +1,5 @@
+import random
+import time
 import asyncio
 import importlib
 import logging
@@ -121,7 +123,8 @@ async def query_data(metric_name, conf):
                 conf["host_infos"]["login_data"]["authorized"] = False
             else:
                 data = await response.text()
-                cache[url] = data
+                if response.status < 400:
+                    cache[url] = data
         except asyncio.TimeoutError:
             logger.error(
                 "Timeout by query data from {0}".format(
@@ -178,6 +181,9 @@ async def collect_periodically(metric_name, conf, result_queue):
         conf {dict} -- config
         result_queue {Queue} -- result_queue
     """
+    random_wait_time = random.random() * 4.5 + 0.01
+    await asyncio.sleep(random_wait_time)
+
     deadline = time.time() + conf["interval"]
     while True:
         if not conf["host_infos"]["login_data"]["authorized"]:
