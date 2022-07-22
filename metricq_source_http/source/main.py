@@ -1,10 +1,10 @@
-import random
-import time
 import asyncio
 import importlib
 import logging
 import logging.handlers
 import time
+from collections import defaultdict
+from contextlib import nullcontext
 from queue import Queue
 from urllib.parse import urljoin
 
@@ -31,6 +31,7 @@ logger.handlers[0].formatter = logging.Formatter(
 )
 
 cache = ExpiringDict(max_len=5, max_age_seconds=5)
+cache_locks = defaultdict(asyncio.Lock)
 
 
 class ConfigError(Exception):
@@ -107,45 +108,56 @@ async def query_data(metric_name, conf):
     if not conf["host_infos"]["login_data"]["authorized"]:
         return metric_name, ts, value
     data = None
-    if ["use_cache"] and (url in cache):
-        data = cache[url]
+
+    if conf["use_cache"]:
+        locked_cache = cache_locks[url]
     else:
-        try:
-            response = await conf["host_infos"]["session"].get(url)
-            if response.status >= 400:
+        locked_cache = nullcontext()
+
+    async with locked_cache:
+        if conf["use_cache"] and (url in cache):
+            data = cache[url]
+        else:
+            try:
+                response = await conf["host_infos"]["session"].get(url)
+                if response.status >= 400:
+                    logger.error(
+                        "Error by {0}, status code: {1}".format(
+                            url,
+                            response.status,
+                        )
+                    )
+
+                    if conf["host_infos"]["login_data"]["login_type"] == "cookie":
+                        conf["host_infos"]["login_data"]["authorized"] = False
+
+                else:
+                    data = await response.text()
+                    if conf["use_cache"]:
+                        cache[url] = data
+
+            except asyncio.TimeoutError:
                 logger.error(
-                    "Error by {0}, status code: {1}".format(
+                    "Timeout by query data from {0}".format(
                         url,
-                        response.status,
                     )
                 )
-            if conf["host_infos"]["login_data"]["login_type"] == "cookie":
-                conf["host_infos"]["login_data"]["authorized"] = False
-            else:
-                data = await response.text()
-                if response.status < 400:
-                    cache[url] = data
-        except asyncio.TimeoutError:
-            logger.error(
-                "Timeout by query data from {0}".format(
-                    url,
+            except aiohttp.ClientError as e:
+                logger.error(
+                    "Error by query data from {0}, {1}".format(
+                        url,
+                        e,
+                    )
                 )
-            )
-        except aiohttp.ClientError as e:
-            logger.error(
-                "Error by query data from {0}, {1}".format(
-                    url,
-                    e,
-                )
-            )
+
     if data:
         if not conf["plugin"] in LOADED_PLUGINS:
-            full_modul_name = "metricq_source_http.plugin_{}".format(
+            full_module_name = "metricq_source_http.plugin_{}".format(
                 conf["plugin"],
             )
-            if importlib.util.find_spec(full_modul_name):
+            if importlib.util.find_spec(full_module_name):
                 LOADED_PLUGINS[conf["plugin"]] = importlib.import_module(
-                    full_modul_name
+                    full_module_name
                 )
             else:
                 logger.error(
@@ -181,9 +193,6 @@ async def collect_periodically(metric_name, conf, result_queue):
         conf {dict} -- config
         result_queue {Queue} -- result_queue
     """
-    random_wait_time = random.random() * 4.5 + 0.01
-    await asyncio.sleep(random_wait_time)
-
     deadline = time.time() + conf["interval"]
     while True:
         if not conf["host_infos"]["login_data"]["authorized"]:
@@ -280,7 +289,7 @@ def get_hostlist(obj):
 
 
 def make_conf_and_metrics(conf, default_interval, timeout):
-    """rebuild config and make the metrics to declaire
+    """rebuild config and make the metrics to declare
 
     Arguments:
         conf {list<dict>} -- configs to rebuild
@@ -291,7 +300,7 @@ def make_conf_and_metrics(conf, default_interval, timeout):
         ConfigError: raises if 'path' is not in conf
 
     Returns:
-        tuple -- rebuilded conf, metrics
+        tuple -- rebuilt conf, metrics
     """
     metrics = {}
     new_conf = {}
