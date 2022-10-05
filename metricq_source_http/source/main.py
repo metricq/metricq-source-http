@@ -393,9 +393,13 @@ class HttpSource(metricq.IntervalSource):
         self.result_queue = Queue()
         logger.info("initializing HttpSource")
         super().__init__(*args, **kwargs)
+
+    async def connect(self):
         watcher = asyncio.FastChildWatcher()
-        watcher.attach_loop(self.event_loop)
+        watcher.attach_loop(self._event_loop)
         asyncio.set_child_watcher(watcher)
+
+        await super().connect()
 
     @metricq.rpc_handler("config")
     async def _on_config(self, **config):
