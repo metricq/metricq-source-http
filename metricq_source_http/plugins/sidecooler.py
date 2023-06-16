@@ -1,4 +1,3 @@
-import json
 import re
 from html.parser import HTMLParser
 
@@ -6,9 +5,13 @@ NaN = float("nan")
 
 
 class SC_HTML(HTMLParser):
-    kvs = {}
+    kvs: dict[str, str]
 
-    def handle_data(self, data):
+    def __init__(self) -> None:
+        super().__init__()
+        self.kvs = {}
+
+    def handle_data(self, data: str) -> None:
         if data.strip():
             sanitized = re.sub(r"\s", "", data)
             mo = re.match("(.+)=(.+);", sanitized)
@@ -18,9 +21,7 @@ class SC_HTML(HTMLParser):
                 self.kvs[key] = value
 
 
-def response_parse(response, **kwargs):
-    key = kwargs["key"]
-    data_type = kwargs["data_type"]
+def response_parse(response: str, *, key: str, data_type: str) -> float:
     parser = SC_HTML()
     parser.feed(response)
     if key in parser.kvs:

@@ -1,0 +1,65 @@
+[build-system]
+requires = [
+    "setuptools>=56.0.0",
+    "setuptools_scm[toml]~=7.0",
+]
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = "metricq_source_http"
+dynamic = ["version"]
+authors = [
+    {name = "Thomas Ilsche"},
+    {name = "Mario Bielert"},
+    {name = "Franz Höpfner"},
+    {name = "Phillip Joram"},
+    {name = "Maik Schmidt"},
+    {name = "Julius Metz"},
+]
+requires-python = ">=3.10"
+dependencies = [
+    "click",
+    "click_log",
+    "metricq ~= 5.1",
+    "aiohttp",
+    "jsonpath-rw",
+    "python-hostlist",
+]
+[project.optional-dependencies]
+dev = [
+    "black ~= 23.3",
+    "isort ~= 5.12",
+    "mypy",
+    "tox",
+]
+
+[project.scripts]
+metricq-source-http = "metricq_source_http.source:main"
+
+[tool.setuptools]
+packages = ["metricq_source_http"]
+
+[tool.setuptools_scm]
+write_to = "metricq_source_http/version.py"
+
+[tool.black]
+# default is fine
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+skip = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "_build",
+    "build",
+    "dist",
+    "venv",
+]
+order_by_type = true
