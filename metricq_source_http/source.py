@@ -140,9 +140,12 @@ class Metric:
         plugin_params: dict[str, Any] = {},
         description: str = "",
         unit: Optional[str] = None,
+        chunk_size: Optional[int] = None,
         **kwargs: Any,
     ):
         self._source_metric = host.source[name]
+        if chunk_size is not None:
+            self._source_metric.chunk_size = chunk_size
         self.description = description
         if host.description:
             self.description = f"{host.description} {self.description}"
