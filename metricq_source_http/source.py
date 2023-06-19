@@ -45,15 +45,18 @@ def load_plugin(name: str) -> Callable[..., float]:
         raise ConfigError(f"Plugin {name} has no response_parse function")
 
 
-def _extract_interval(**config: Any) -> Optional[int | float]:
+def _extract_interval(**config: Any) -> Optional[metricq.Timedelta]:
     """
     To allow interval, rate or maybe period, and other types in the future,
     we have a separate function here.
     """
     with suppress(KeyError):
         interval = config["interval"]
-        assert isinstance(interval, (int, float))
-        return interval
+        if isinstance(interval, (int, float)):
+            return metricq.Timedelta.from_s(interval)
+        else:
+            assert isinstance(interval, str)
+            return metricq.Timedelta.from_string(interval)
     return None
 
 
@@ -125,7 +128,7 @@ class CookieAuthorizationManager(AuthorizationManager):
 
 @dataclass(frozen=True)
 class _MetricGroupKey:
-    interval: int | float
+    interval: metricq.Timedelta
     path: str
 
 
@@ -155,7 +158,7 @@ class Metric:
             interval = host.source.default_interval
             if interval is None:
                 raise ConfigError(f"interval missing in {name}")
-        self.interval: int | float = interval
+        self.interval: metricq.Timedelta = interval
         if not path.startswith("/"):
             logger.warning(
                 f"Path '{path}' for {name} should start with '/', adding it."
@@ -174,7 +177,8 @@ class Metric:
     def metadata(self) -> metricq.JsonDict:
         metadata = {
             "description": self.description,
-            "rate": 1 / self.interval,
+            "rate": 1 / self.interval.s,
+            "interval": self.interval.s,
         }
         if self.unit:
             metadata["unit"] = self.unit
@@ -218,7 +222,7 @@ class MetricGroup:
         assert self._key == metric.group_key
 
     @property
-    def _interval(self) -> int | float:
+    def _interval(self) -> metricq.Timedelta:
         assert self._key is not None
         return self._key.interval
 
@@ -238,8 +242,12 @@ class MetricGroup:
         session: aiohttp.ClientSession,
     ) -> None:
         # Similar code as to metricq.IntervalSource.task, but for individual MetricGroups
-        deadline = time.time()
-        deadline -= deadline % self._interval  # Align deadlines to the interval
+        deadline = metricq.Timestamp.now()
+        deadline -= metricq.Timedelta(deadline.posix_ns % self._interval.ns)  #
+        # Align
+        # deadlines to
+        # the
+        # interval
         while True:
             try:
                 await self._update(session, authorization_manager)
@@ -249,14 +257,14 @@ class MetricGroup:
 
             deadline += self._interval
 
-            now = time.time()
+            now = metricq.Timestamp.now()
             while now >= deadline:
                 logger.warning("Missed deadline {}, it is now {}", deadline, now)
                 deadline += self._interval
 
             timeout = deadline - now
             done, pending = await asyncio.wait(
-                (asyncio.create_task(asyncio.sleep(timeout)), stop_future),
+                (asyncio.create_task(asyncio.sleep(timeout.s)), stop_future),
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if stop_future in done:
@@ -385,7 +393,7 @@ class Host:
 
 
 class HttpSource(metricq.Source):
-    default_interval: Optional[int | float] = None
+    default_interval: Optional[metricq.Timedelta] = None
     hosts: Optional[list[Host]] = None
     _host_task_stop_future: Optional[asyncio.Future[None]] = None
     _host_task: Optional[asyncio.Task[None]] = None
