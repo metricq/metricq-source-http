@@ -131,10 +131,6 @@ class _MetricGroupKey:
     interval: metricq.Timedelta
     path: str
 
-    # workaround for https://github.com/metricq/metricq-python/issues/177
-    def __hash__(self) -> int:
-        return hash((self.interval.ns, self.path))
-
 
 class Metric:
     def __init__(
@@ -247,11 +243,7 @@ class MetricGroup:
     ) -> None:
         # Similar code as to metricq.IntervalSource.task, but for individual MetricGroups
         deadline = metricq.Timestamp.now()
-        deadline -= metricq.Timedelta(deadline.posix_ns % self._interval.ns)  #
-        # Align
-        # deadlines to
-        # the
-        # interval
+        deadline -= deadline % self._interval  # Align deadlines to the interval
         while True:
             try:
                 await self._update(session, authorization_manager)
