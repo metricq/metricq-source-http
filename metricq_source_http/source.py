@@ -131,6 +131,10 @@ class _MetricGroupKey:
     interval: metricq.Timedelta
     path: str
 
+    # workaround for https://github.com/metricq/metricq-python/issues/177
+    def __hash__(self) -> int:
+        return hash((self.interval.ns, self.path))
+
 
 class Metric:
     def __init__(
