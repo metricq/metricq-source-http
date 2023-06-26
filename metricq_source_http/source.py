@@ -327,6 +327,7 @@ class Host:
         metrics: dict[str, Any],
         description: str = "",
         insecure: bool = False,
+        verify_ssl: bool = True,
         **kwargs: Any,
     ):
         self.source = source
@@ -334,6 +335,7 @@ class Host:
         self._host = host
         self._metric_prefix = name
         self.description = description
+        self._verify_ssl = verify_ssl
 
         self._groups: defaultdict[_MetricGroupKey, MetricGroup] = defaultdict(
             lambda: MetricGroup(self)
@@ -396,10 +398,13 @@ class Host:
         return URL.build(scheme=self._scheme, host=self._host)
 
     async def task(self, stop_future: asyncio.Future[None]) -> None:
+        extra_kwargs = self._authorization_manager.session_params
+        if self._verify_ssl is False:
+            extra_kwargs["connector"] = aiohttp.TCPConnector(ssl=False)
         async with aiohttp.ClientSession(
             base_url=self.base_url,
             timeout=aiohttp.ClientTimeout(total=self.source.http_timeout),
-            **self._authorization_manager.session_params,
+            **extra_kwargs,
         ) as session:
             await self._authorization_manager.authorize_session(session)
             await asyncio.gather(
