@@ -196,7 +196,7 @@ class Metric:
         metadata = {
             "description": self.description,
             "rate": 1 / self.interval.s,
-            "interval": self.interval.s,
+            "interval": self.interval.precise_string,
             "host": self._host.base_url.host,
             "url": self._host.base_url.with_path(self.path),
         }
