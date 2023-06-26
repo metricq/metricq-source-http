@@ -316,16 +316,12 @@ class MetricGroup:
         authorization_manager: AuthorizationManager,
     ) -> None:
         timestamp = metricq.Timestamp.now()
-        try:
+        response = await session.get(self._path)
+        if not response.ok and authorization_manager.authorize_session(session):
+            logger.debug("[{}] re-trying request with authorization", self._url_str)
             response = await session.get(self._path)
-            if not response.ok and authorization_manager.authorize_session(session):
-                logger.debug("[{}] re-trying request with authorization", self._url_str)
-                response = await session.get(self._path)
-            response.raise_for_status()
-            text = await response.text()
-        except aiohttp.ClientError as e:
-            logger.error("[{}] request error: {}", self._url_str, e)
-            return
+        response.raise_for_status()
+        text = await response.text()
 
         duration = metricq.Timestamp.now() - timestamp
         logger.debug(
