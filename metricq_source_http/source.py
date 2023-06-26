@@ -56,7 +56,8 @@ def _extract_interval(**kwargs: Any) -> Optional[metricq.Timedelta]:
         del kwargs["interval"]
     # Since this is used for the source itself and metrics, we must allow
     # _id, _ref etc.
-    for key in kwargs.keys():
+    # Copy because we modify the keys
+    for key in list(kwargs.keys()):
         if key.startswith("_"):
             del kwargs[key]
     if kwargs:
