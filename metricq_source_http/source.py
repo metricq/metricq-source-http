@@ -281,7 +281,7 @@ class MetricGroup:
                     type(e),
                 )
                 # Just retry indefinitely but add another timeout sleep for good measure
-                asyncio.sleep(self._host.source.http_timeout)
+                await asyncio.sleep(self._host.source.http_timeout)
                 # no need to miss deadlines, we are probably already behind, so start
                 # with a fresh one
                 deadline = metricq.Timestamp.now()
