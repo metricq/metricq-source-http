@@ -256,6 +256,11 @@ class MetricGroup:
     def metadata(self) -> dict[str, metricq.MetadataDict]:
         return {metric.name: metric.metadata for metric in self._metrics}
 
+    @property
+    def _url_str(self) -> str:
+        """URL string for logging"""
+        return self._host.base_url.with_path(self._path).human_repr()
+
     async def task(
         self,
         stop_future: asyncio.Future[None],
@@ -269,14 +274,29 @@ class MetricGroup:
             try:
                 await self._update(session, authorization_manager)
             except Exception as e:
-                logger.error(f"Error in MetricGroup._update: {e} ({type(e)}")
-                # Just retry indefinitely
+                logger.error(
+                    "[{}] MetricGroup._update failed: {} ({}",
+                    self._url_str,
+                    e,
+                    type(e),
+                )
+                # Just retry indefinitely but add another timeout sleep for good measure
+                asyncio.sleep(self._host.source.http_timeout)
+                # no need to miss deadlines, we are probably already behind, so start
+                # with a fresh one
+                deadline = metricq.Timestamp.now()
+                deadline -= deadline % self._interval
 
             deadline += self._interval
 
             now = metricq.Timestamp.now()
             while now >= deadline:
-                logger.warning("Missed deadline {}, it is now {}", deadline, now)
+                logger.warning(
+                    "[{}] missed deadline {}, it is now {}",
+                    self._url_str,
+                    deadline,
+                    now,
+                )
                 deadline += self._interval
 
             timeout = deadline - now
@@ -299,17 +319,17 @@ class MetricGroup:
         try:
             response = await session.get(self._path)
             if not response.ok and authorization_manager.authorize_session(session):
-                logger.debug(f"Re-trying request to {self._path} with authorization")
+                logger.debug("[{}] re-trying request with authorization", self._url_str)
                 response = await session.get(self._path)
             response.raise_for_status()
             text = await response.text()
         except aiohttp.ClientError as e:
-            logger.error(f"Error in request to {self._host.base_url}{self._path}: {e}")
+            logger.error("[{}] request error: {}", self._url_str, e)
             return
 
         duration = metricq.Timestamp.now() - timestamp
         logger.debug(
-            f"Request '{self._host.base_url}{self._path}' finished successfully in {duration}"
+            "[{}] request finished successfully in {}", self._url_str, duration
         )
 
         await asyncio.gather(
