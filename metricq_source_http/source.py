@@ -185,6 +185,7 @@ class Metric:
         self.plugin_parse = load_plugin(plugin)
         self.plugin_params = plugin_params
         self.unit = unit
+        self._host = host
 
     @property
     def name(self) -> str:
@@ -196,6 +197,8 @@ class Metric:
             "description": self.description,
             "rate": 1 / self.interval.s,
             "interval": self.interval.s,
+            "host": self._host.base_url.host,
+            "url": self._host.base_url.with_path(self.path),
         }
         if self.unit:
             metadata["unit"] = self.unit
