@@ -45,23 +45,37 @@ def load_plugin(name: str) -> Callable[..., float]:
         raise ConfigError(f"Plugin {name} has no response_parse function")
 
 
-def _extract_interval(**config: Any) -> Optional[metricq.Timedelta]:
+def _extract_interval(**kwargs: Any) -> Optional[metricq.Timedelta]:
     """
     To allow interval, rate or maybe period, and other types in the future,
     we have a separate function here.
     """
-    with suppress(KeyError):
-        interval = config["interval"]
-        if isinstance(interval, (int, float)):
-            return metricq.Timedelta.from_s(interval)
-        else:
-            assert isinstance(interval, str)
-            return metricq.Timedelta.from_string(interval)
-    return None
+    interval = kwargs.get("interval")
+
+    if interval is not None:
+        del kwargs["interval"]
+    # Since this is used for the source itself and metrics, we must allow
+    # _id, _ref etc.
+    for key in kwargs.keys():
+        if key.startswith("_"):
+            del kwargs[key]
+    if kwargs:
+        logger.warning("unused configuration keys: {}", kwargs)
+
+    if interval is None:
+        return None
+    if isinstance(interval, (int, float)):
+        return metricq.Timedelta.from_s(interval)
+    assert isinstance(interval, str)
+    return metricq.Timedelta.from_string(interval)
 
 
 class AuthorizationManager:
     _needs_login = False
+
+    def __init__(self, **kwargs: Any):
+        if kwargs:
+            logger.warning("unused configuration keys for host: {}", kwargs)
 
     @staticmethod
     def create(
@@ -93,6 +107,7 @@ class BasicAuthorizationManager(AuthorizationManager):
     def __init__(self, *, user: str, password: str, **kwargs: Any):
         self.user = user
         self.password = password
+        super().__init__(**kwargs)
 
     @property
     def session_params(self) -> dict[str, Any]:
@@ -104,6 +119,7 @@ class CookieAuthorizationManager(AuthorizationManager):
         self.login_path = login_path
         self.user = user
         self.password = password
+        super().__init__(**kwargs)
 
     async def authorize_session(self, session: aiohttp.ClientSession) -> bool:
         try:
@@ -153,6 +169,7 @@ class Metric:
         if host.description:
             self.description = f"{host.description} {self.description}"
 
+        # it is the only function using kwargs and it will warn if there are excess ones
         interval = _extract_interval(**kwargs)
         if interval is None:
             interval = host.source.default_interval
@@ -318,6 +335,7 @@ class Host:
             lambda: MetricGroup(self)
         )
         self._add_metrics(metrics)
+        # Note: AuthorizationManager will warn if there are any kwargs it does not use
         self._authorization_manager = AuthorizationManager.create(**kwargs)
 
     def _add_metrics(self, metrics: dict[str, Any]) -> None:
