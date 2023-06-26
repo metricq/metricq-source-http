@@ -199,7 +199,7 @@ class Metric:
             "rate": 1 / self.interval.s,
             "interval": self.interval.precise_string,
             "host": self._host.base_url.host,
-            "url": self._host.base_url.with_path(self.path),
+            "url": self._host.base_url.with_path(self.path).human_repr(),
         }
         if self.unit:
             metadata["unit"] = self.unit
