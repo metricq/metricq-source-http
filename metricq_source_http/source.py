@@ -280,8 +280,8 @@ class MetricGroup:
                     e,
                     type(e),
                 )
-                # Just retry indefinitely but add another timeout sleep for good measure
-                await asyncio.sleep(self._host.source.http_timeout)
+                # Just retry indefinitely but add another sleep to avoid spamming errors
+                await asyncio.sleep(self._host.source.retry_delay)
                 # no need to miss deadlines, we are probably already behind, so start
                 # with a fresh one
                 deadline = metricq.Timestamp.now()
@@ -443,10 +443,12 @@ class HttpSource(metricq.Source):
         *,
         hosts: list[dict[str, Any]],
         http_timeout: int | float = 5,
+        retry_delay: int | float = 60,
         **config: Any,
     ) -> None:
         self.default_interval = _extract_interval(**config)
         self.http_timeout = http_timeout
+        self.retry_delay = retry_delay
 
         if self.hosts is not None:
             await self._stop_host_tasks()
