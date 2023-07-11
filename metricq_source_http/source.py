@@ -317,7 +317,7 @@ class MetricGroup:
     ) -> None:
         timestamp = metricq.Timestamp.now()
         response = await session.get(self._path)
-        if not response.ok and authorization_manager.authorize_session(session):
+        if not response.ok and await authorization_manager.authorize_session(session):
             logger.debug("[{}] re-trying request with authorization", self._url_str)
             response = await session.get(self._path)
         response.raise_for_status()
