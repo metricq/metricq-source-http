@@ -15,6 +15,7 @@ import click_log  # type: ignore
 import metricq
 from hostlist import expand_hostlist  # type: ignore
 from metricq.logging import get_logger
+from metricq.cli import metricq_command
 from yarl import URL
 
 from .version import __version__
@@ -501,10 +502,7 @@ class HttpSource(metricq.Source):
         await self._stop_host_tasks()
 
 
-@click.command()
-@click.option("--server", default="amqp://localhost/")
-@click.option("--token", default="source-http")
-@click_log.simple_verbosity_option(logger)  # type: ignore
+@metricq_command(default_token = "source-http")
 def main(server: str, token: str) -> None:
     src = HttpSource(token=token, url=server)
     src.run()
