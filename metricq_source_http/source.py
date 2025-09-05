@@ -88,6 +88,8 @@ class AuthorizationManager:
             return CookieAuthorizationManager(**kwargs)
         if login_type == "basic":
             return BasicAuthorizationManager(**kwargs)
+        if login_type == "redfish":
+            return RedFishAuthorizationManager(**kwargs)
         raise ConfigError(f"login_type {login_type} not supported")
 
     @property
@@ -114,6 +116,33 @@ class BasicAuthorizationManager(AuthorizationManager):
     def session_params(self) -> dict[str, Any]:
         return {"auth": aiohttp.BasicAuth(self.user, self.password)}
 
+
+class RedFishAuthorizationManager(AuthorizationManager):
+    def __init__(self, *, user: str, password: str, **kwargs: Any):
+        self.user = user
+        self.password = password
+        self.token: str | None = None
+        super().__init__(**kwargs)
+
+    async def authorize_session(self, session: aiohttp.ClientSession) -> bool:
+        try:
+            response = await session.post(
+                "/redfish/v1/SessionService/Sessions",
+                json={
+                    "UserName": self.user,
+                    "Password": self.password,
+                },
+            )
+            response.raise_for_status()
+            session.headers["X-Auth-Token"] = response.headers["X-Auth-Token"]
+            return True
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+            logger.error(f"Error in RedFish session auth: {e}")
+            return False
+
+    @property
+    def session_params(self) -> dict[str, Any]:
+        return {}
 
 class CookieAuthorizationManager(AuthorizationManager):
     def __init__(self, *, login_path: str, user: str, password: str, **kwargs: Any):
@@ -416,7 +445,7 @@ class Host:
     async def task(self, stop_future: asyncio.Future[None]) -> None:
         extra_kwargs = self._authorization_manager.session_params
         if self._verify_ssl is False:
-            extra_kwargs["connector"] = aiohttp.TCPConnector(ssl=False)
+            extra_kwargs["connector"] = aiohttp.TCPConnector(verify_ssl=False)
         async with aiohttp.ClientSession(
             base_url=self.base_url,
             timeout=aiohttp.ClientTimeout(total=self.source.http_timeout),
