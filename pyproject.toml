@@ -20,7 +20,7 @@ requires-python = ">=3.10"
 dependencies = [
     "click",
     "click_log",
-    "metricq ~= 5.3",
+    "metricq ~= 6.0",
     "aiohttp",
     "jsonpath-rw",
     "python-hostlist",
